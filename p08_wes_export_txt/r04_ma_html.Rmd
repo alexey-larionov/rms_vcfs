@@ -64,10 +64,14 @@ vv.df[1:5,1:9]
 NDA = number of alternate alleles discovered (but not necessarily genotyped) at the site
 
 ```{r nda}
-nda <- as.vector(vv.df$NDA)
-table(nda)
-hist(nda, xlim=c(0,max(nda)), breaks = c(0:max(nda)))
-rm(vv.df, nda)
+
+# There is no NDA in this RMS dataset
+
+#nda <- as.vector(vv.df$NDA)
+#table(nda)
+#hist(nda, xlim=c(0,max(nda)), breaks = c(0:max(nda)))
+#rm(vv.df, nda)
+
 ```
 
 #Genotypes (GT)

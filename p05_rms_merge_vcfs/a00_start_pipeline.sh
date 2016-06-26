@@ -1,46 +1,34 @@
 #!/bin/bash
 
 # a00_start_pipeline.sh
-# Start genotyping gvcfs
-# Alexey Larionov, 29Jan2016
+# Start merging rms dbGAP vcfs
+# Alexey Larionov, 10Jun2016
+# Last updated: 24Jun2016
 
-## Read parameter
+# Command line arguments
 job_file="${1}"
 scripts_folder="${2}"
 
-# Read job's settings
-source "${scripts_folder}/a02_read_config.sh"
+# Main log name and location
+working_folder=$(awk '$1=="working_folder:" {print $2}' "${job_file}") # e.g. /scratch/medgen/users/mae 
+project=$(awk '$1=="project:" {print $2}' "${job_file}") # e.g. rms_dbGAP 
+output_folder=$(grep ^"output_folder" "${job_file}" | awk '{print $2}') # e.g. s05_merged_vcf_v1
+logs_folder=$(awk '$1=="logs_folder:" {print $2}' "${job_file}") # e.g. logs
 
-# Start lane pipeline log
+logs_folder="${working_folder}/${project}/${output_folder}/${logs_folder}"
 mkdir -p "${logs_folder}"
-log="${logs_folder}/${dataset}_genotype_and_assess.log"
+log="${logs_folder}/s01_rms_merge_vcfs.log"
 
-echo "WES library: genotype gvcfs" > "${log}"
-echo "${dataset}: genotype gvcfs, add var IDs, multiallelic flag and calculate stats">> "${log}" 
-echo "Started: $(date +%d%b%Y_%H:%M:%S)" >> "${log}"
-echo "" >> "${log}" 
-
-echo "====================== Settings ======================" >> "${log}"
-echo "" >> "${log}"
-
-source "${scripts_folder}/a03_report_settings.sh" >> "${log}"
-
-echo "=================== Pipeline steps ===================" >> "${log}"
-echo "" >> "${log}"
+# Requested time and account
+time_to_request=$(grep ^"Max_time_to_request_(hrs.min.sec):" "${job_file}" | awk '{print $2}')
+time_to_request=${time_to_request//./:} # substitute dots to colons
+account_to_use=$(grep ^"Account_to_use_on_HPC" "${job_file}" | awk '{print $2}')
 
 # Submit job
-slurm_time="--time=${time_to_request}"
-slurm_account="--account=${account_to_use}"
-
-sbatch "${slurm_time}" "${slurm_account}" \
-  "${scripts_folder}/s01_genotype_gvcfs.sb.sh" \
+sbatch \
+  --output="${log}" \
+  --time="${time_to_request}" \
+  --account="${account_to_use}" \
+  "${scripts_folder}/s01_rms_merge_vcfs.sh" \
   "${job_file}" \
-  "${dataset}" \
-  "${scripts_folder}" \
-  "${logs_folder}" \
-  "${log}"
-
-# Update pipeline log
-echo "" >> "${log}"
-echo "Submitted s01_genotype_gvcfs: $(date +%d%b%Y_%H:%M:%S)" >> "${log}"
-echo "" >> "${log}"
+  "${scripts_folder}"

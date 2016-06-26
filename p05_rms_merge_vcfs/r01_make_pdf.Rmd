@@ -8,12 +8,18 @@ params:
 ```{r setup_read_data, include=FALSE}
 
 # Make pdf report for genotyping step
-# Alexey Larionov
-# 13Feb2016
+# Alexey Larionov, 13Feb2016
+# Last updated 24Jun2016
 
 # Read command line parameter(s)
 ds <- params$dataset
 df <- params$data_file
+
+# Debug
+#library(rmarkdown)
+#ds <- "rms-raw"
+#df <- "/scratch/medgen/users/alexey/rms_dbGAP/s05_merged_vcf_v1/histograms/rms_dbGAP_histograms_data.txt"
+
 
 # Set chunks' options
 knitr::opts_chunk$set(fig.width=7, fig.height=4.5, fig.align = 'center', echo=FALSE)
@@ -99,6 +105,7 @@ knitr::kable(j, format.args=list(big.mark=","), caption=fa.pass.caption)
 \pagebreak
 
 ```{r SNP_histograms_no_filters}
+
 hist(VQSLOD[TYPE == "SNP"], main="SNPs VQSLOD (all, no zoom)", xlab="VQSLOD")
 
 hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "SNP"], breaks=100, 
@@ -109,6 +116,7 @@ hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "SNP"], breaks=100,
 \pagebreak
 
 ```{r SNP_histograms_after_min_filters}
+
 hist(VQSLOD[TYPE == "SNP" & passed.min.filters], main="SNPs VQSLOD (passed min filters, no zoom)", xlab="VQSLOD")
 
 hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "SNP" & passed.min.filters], breaks=100, 
@@ -119,6 +127,7 @@ hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "SNP" & passed.min.filters], b
 \pagebreak
 
 ```{r INDEL_histograms_no_filters}
+
 hist(VQSLOD[TYPE == "INDEL"], main="INDELs VQSLOD (all, no zoom)", xlab="VQSLOD")
 
 hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "INDEL"], breaks=100, 
@@ -139,57 +148,73 @@ hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "INDEL" & passed.min.filters],
 \pagebreak
 
 ```{r MIXED_histograms_no_filters}
-hist(VQSLOD[TYPE == "MIXED"], main="MIXEDs VQSLOD (all, no zoom)", xlab="VQSLOD")
 
-hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "MIXED"], breaks=100, 
-     main="MIXEDs VQSLOD (all, zoom -30 to 30)", xlim=c(-30,30), xlab="VQSLOD")
+# MIXED is absent in this dataset
+
+#hist(VQSLOD[TYPE == "MIXED"], main="MIXEDs VQSLOD (all, no zoom)", xlab="VQSLOD")
+
+#hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "MIXED"], breaks=100, 
+#     main="MIXEDs VQSLOD (all, zoom -30 to 30)", xlim=c(-30,30), xlab="VQSLOD")
 
 ```
 
 \pagebreak
 
 ```{r MIXED_histograms_after_min_filters}
-hist(VQSLOD[TYPE == "MIXED" & passed.min.filters], main="MIXEDs VQSLOD (passed min filters, no zoom)", xlab="VQSLOD")
 
-hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "MIXED" & passed.min.filters], breaks=25, 
-     main="MIXEDs VQSLOD (passed min filters, zoom -30 to 30)", xlim=c(-30,30), xlab="VQSLOD")
+# MIXED is absent in this dataset
+
+#hist(VQSLOD[TYPE == "MIXED" & passed.min.filters], main="MIXEDs VQSLOD (passed min filters, no zoom)", xlab="VQSLOD")
+
+#hist(VQSLOD[VQSLOD >=-30 & VQSLOD <= 30 & TYPE == "MIXED" & passed.min.filters], breaks=25, 
+#     main="MIXEDs VQSLOD (passed min filters, zoom -30 to 30)", xlim=c(-30,30), xlab="VQSLOD")
 
 ```
 
 \pagebreak
 
 ```{r DP_histograms_no_filters}
+
 hist(DP, main="DP (all, no zoom)", xlab="DP")
 
 DP.cap <- floor(quantile(DP, 0.99)) # exclude 1% of excessive dp
 DP.zm.main <- paste("DP (all, zoom 0 - ",DP.cap,")", sep="")
 hist(DP[DP < DP.cap], breaks=100, xlim=c(0,DP.cap), main=DP.zm.main, xlab="DP")
+
 ```
 
 \pagebreak
 
 ```{r DP_histograms_after_min_filters}
+
 hist(DP[passed.min.filters], main="DP (passed min filters, no zoom)", xlab="DP")
 
 DP.cap <- floor(quantile(DP, 0.99)) # exclude 1% of excessive dp
 DP.zm.main <- paste("DP (passed min filters, zoom 0 - ",DP.cap,")", sep="")
 hist(DP[DP < DP.cap & passed.min.filters], breaks=100, xlim=c(0,DP.cap), main=DP.zm.main, xlab="DP")
+
 ```
 
 \pagebreak
 
 ```{r QUAL_histograms_no_filters}
+
 hist(QUAL, main="QUAL (all, no zoom)", xlab="QUAL")
 hist(QUAL[QUAL < 250], breaks=100, xlim=c(0,250), main="QUAL (all, zoom 0 - 250)", xlab="QUAL")
+
 ```
 
 \pagebreak
 
 ```{r QUAL_histograms_after_min_filters}
+
 hist(QUAL, main="QUAL (passed min filters, no zoom)", xlab="QUAL")
 hist(QUAL[QUAL < 250 & passed.min.filters], breaks=100, xlim=c(0,250), main="QUAL (passed min filters, zoom 0 - 250)", xlab="QUAL")
+
 ```
 
 ```{r Clenaup}
+
 detach(x)
+
 ```

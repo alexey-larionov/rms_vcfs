@@ -1,15 +1,29 @@
 #!/bin/bash
 
 # a00_start_pipeline.sh
-# Start filtering vcf by DP, QUAL and VQSLOD
+# Start filtering rms vcf by DP, QUAL and VQSLOD
 # Alexey Larionov, 06Feb2016
+# Last updated: 24Jun2016
 
 ## Read parameter
 job_file="${1}"
 scripts_folder="${2}"
 
-# Read job's settings
-source "${scripts_folder}/a02_read_config.sh"
+# Main log name and location
+working_folder=$(awk '$1=="working_folder:" {print $2}' "${job_file}") # e.g. /scratch/medgen/users/mae 
+project=$(awk '$1=="project:" {print $2}' "${job_file}") # e.g. rms_dbGAP
+output_folder=$(grep ^"output_folder" "${job_file}" | awk '{print $2}') # e.g. s06_merged_vcf_v1_flt1
+logs_folder=$(awk '$1=="logs_folder:" {print $2}' "${job_file}") # e.g. logs
+fa_threshold=$(awk '$1=="Apply_1k_ALT_frequency_threshold:" {print $2}' "${job_file}") # e.g. no
+
+logs_folder="${working_folder}/${project}/${output_folder}/${logs_folder}"
+mkdir -p "${logs_folder}"
+log="${logs_folder}/s01_filter_vcf.log"
+
+# Requested time and account
+time_to_request=$(grep ^"Max_time_to_request_(hrs.min.sec):" "${job_file}" | awk '{print $2}')
+time_to_request=${time_to_request//./:} # substitute dots to colons
+account_to_use=$(grep ^"Account_to_use_on_HPC" "${job_file}" | awk '{print $2}')
 
 # Check the value of AF threshold
 if [ "${fa_threshold}" != "no" ] && \
@@ -28,37 +42,11 @@ then
   exit 1
 fi
 
-# Start lane pipeline log
-mkdir -p "${logs_folder}"
-log="${logs_folder}/${dataset_name}_${filter_name}.log"
-
-echo "WES library: filtering vcf" > "${log}"
-echo "${dataset_name} ${filter_name}" >> "${log}" 
-echo "Started: $(date +%d%b%Y_%H:%M:%S)" >> "${log}"
-echo "" >> "${log}" 
-
-echo "====================== Settings ======================" >> "${log}"
-echo "" >> "${log}"
-
-source "${scripts_folder}/a03_report_settings.sh" >> "${log}"
-
-echo "=================== Pipeline steps ===================" >> "${log}"
-echo "" >> "${log}"
-
 # Submit job
-slurm_time="--time=${time_to_request}"
-slurm_account="--account=${account_to_use}"
-
-sbatch "${slurm_time}" "${slurm_account}" \
-  "${scripts_folder}/s01_filter_vcf.sb.sh" \
-  "${job_file}" \
-  "${dataset_name}" \
-  "${filter_name}" \
-  "${scripts_folder}" \
-  "${logs_folder}" \
-  "${log}"
-
-# Update pipeline log
-echo "" >> "${log}"
-echo "Submitted s01_filter_vcf: $(date +%d%b%Y_%H:%M:%S)" >> "${log}"
-echo "" >> "${log}"
+sbatch \
+  --output="${log}" \
+  --time="${time_to_request}" \
+  --account="${account_to_use}" \
+  "${scripts_folder}/s01_filter_vcf.sh" \
+    "${job_file}" \
+    "${scripts_folder}"

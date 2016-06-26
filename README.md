@@ -1,6 +1,7 @@
-This is a pipeline to process a specific dataset within the research group that employes the author. 
+This is a pipeline to process a specific dataset for the research group that employes the author. 
+This is yet work in progress.
 
-The main steps include:
+The main steps will include:
 - Merging vcfs and assessment (VQSR, custom R scripts and samtools vcfstats) 
 - Additional variants filtering by VQSR and a set of hard filters 
 - Variants annotation by VEP

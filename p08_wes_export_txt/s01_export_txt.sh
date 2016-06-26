@@ -3,6 +3,7 @@
 # s01_export_txt.sh
 # data export
 # Alexey Larionov, 23Feb2016
+# Last updated: 26Jun2016
 
 # Notes:
 # Export multi-allelic variants to a separate file
@@ -82,7 +83,7 @@ biallelic_vcf_log="${logs_folder}/${dataset}_biallelic_vcf.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T SelectVariants \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${source_vcf}" \
   -o "${biallelic_vcf}" \
   -restrictAllelesTo BIALLELIC \
@@ -105,11 +106,11 @@ VV_ba_raw_log="${logs_folder}/${dataset}_VV_ba_raw.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${biallelic_vcf}" \
   -F RawVarID -F MultiAllelic -F NDA -F TYPE -F CHROM -F POS -F REF -F ALT -F QUAL -F DP -F VQSLOD -F FILTER -F AC -F AF -F AN \
   -F NEGATIVE_TRAIN_SITE -F POSITIVE_TRAIN_SITE \
-  -F ALT_frequency_in_1k_90 -F ALT_frequency_in_1k_95 -F ALT_frequency_in_1k_99 -F ALT_frequency_in_1k_100 \
+  -F ALT_frequency_in_1k_90 -F ALT_frequency_in_1k_95 -F ALT_frequency_in_1k_99 -F ALT_frequency_in_1k_100 -F ph3_1k.AF \
   -F ANN \
   -o "${VV_ba_raw_txt}" \
   -AMD -raw &>  "${VV_ba_raw_log}"  
@@ -131,7 +132,7 @@ sed -i "1 s/""ANN""$/"${vep_fields}"/" "${VV_ba_raw_txt}"
 echo "Updated header"
 
 # Update table
-awk 'BEGIN {OFS="\t"}{gsub(/\|/,"\t",$22); print}' "${VV_ba_raw_txt}" > "${VV_ba_txt}"
+awk 'BEGIN {OFS="\t"}{gsub(/\|/,"\t",$23); print}' "${VV_ba_raw_txt}" > "${VV_ba_txt}"
 echo "Updated VEP fields"
 
 # Progress report
@@ -151,7 +152,7 @@ GT_ba_log="${logs_folder}/${dataset}_GT_ba.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${biallelic_vcf}" \
   -F RawVarID -GF GT \
   -o "${GT_ba_txt}" \
@@ -207,7 +208,7 @@ DP_ba_log="${logs_folder}/${dataset}_DP_ba.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${biallelic_vcf}" \
   -F RawVarID -GF DP \
   -o "${DP_ba_txt}" \
@@ -230,7 +231,7 @@ AD_ba_log="${logs_folder}/${dataset}_AD_ba.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${biallelic_vcf}" \
   -F RawVarID -GF AD \
   -o "${AD_ba_txt}" \
@@ -253,7 +254,7 @@ GQ_ba_log="${logs_folder}/${dataset}_GQ_ba.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${biallelic_vcf}" \
   -F RawVarID -GF GQ \
   -o "${GQ_ba_txt}" \
@@ -276,7 +277,7 @@ PL_ba_log="${logs_folder}/${dataset}_PL_ba.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${biallelic_vcf}" \
   -F RawVarID -GF PL \
   -o "${PL_ba_txt}" \
@@ -382,7 +383,7 @@ multiallelic_vcf_log="${logs_folder}/${dataset}_multiallelic_vcf.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T SelectVariants \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${source_vcf}" \
   -o "${multiallelic_vcf}" \
   -restrictAllelesTo MULTIALLELIC \
@@ -405,7 +406,7 @@ VV_ma_log="${logs_folder}/${dataset}_VV_multiallelic.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${multiallelic_vcf}" \
   -F RawVarID -F MultiAllelic -F NDA -F TYPE -F CHROM -F POS -F REF -F ALT -F QUAL -F DP -F VQSLOD -F FILTER -F AC -F AF -F AN -F NEGATIVE_TRAIN_SITE -F POSITIVE_TRAIN_SITE -F ANN \
   -o "${VV_ma_txt}" \
@@ -428,7 +429,7 @@ GT_ma_log="${logs_folder}/${dataset}_GT_ma.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${multiallelic_vcf}" \
   -F RawVarID -GF GT \
   -o "${GT_ma_txt}" \
@@ -451,7 +452,7 @@ DP_ma_log="${logs_folder}/${dataset}_DP_ma.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${multiallelic_vcf}" \
   -F RawVarID -GF DP \
   -o "${DP_ma_txt}" \
@@ -474,7 +475,7 @@ AD_ma_log="${logs_folder}/${dataset}_AD_ma.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${multiallelic_vcf}" \
   -F RawVarID -GF AD \
   -o "${AD_ma_txt}" \
@@ -497,7 +498,7 @@ GQ_ma_log="${logs_folder}/${dataset}_GQ_ma.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${multiallelic_vcf}" \
   -F RawVarID -GF GQ \
   -o "${GQ_ma_txt}" \
@@ -520,7 +521,7 @@ PL_ma_log="${logs_folder}/${dataset}_PL_ma.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${multiallelic_vcf}" \
   -F RawVarID -GF PL \
   -o "${PL_ma_txt}" \

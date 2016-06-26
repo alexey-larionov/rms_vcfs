@@ -66,11 +66,8 @@ decompressed_bundle_folder="${resources_folder}/${decompressed_bundle_folder}"
 ref_genome=$(get_parameter "ref_genome") # e.g. human_g1k_v37.fasta
 ref_genome="${decompressed_bundle_folder}/${ref_genome}"
 
-nextera_folder=$(get_parameter "nextera_folder") # e.g. illumina_nextera
-nextera_folder="${resources_folder}/${nextera_folder}"
-
-nextera_targets_intervals=$(get_parameter "nextera_targets_intervals") # e.g. nexterarapidcapture_exome_targetedregions_v1.2.b37.intervals
-nextera_targets_intervals="${nextera_folder}/${nextera_targets_intervals}"
+broad_exomes_intervals=$(get_parameter "broad_exomes_intervals") # e.g. broad_human_exome_hg19.interval_list
+broad_exomes_intervals="${decompressed_bundle_folder}/${broad_exomes_intervals}"
 
 # ----------- Working sub-folders ---------- #
 

@@ -35,18 +35,19 @@ ad.file <- params$ad_file
 gq.file <- params$gq_file
 pl.file <- params$pl_file
 
-#ds <- "ihcap_test"
+#library(rmarkdown)
+#ds <- "rms_dbGAP"
 #tp <- "biallelic"
-#wf <- "/scratch/medgen/users/alexey/ihcap_test/ihcap_std_filters_txt"
-#vv.file <- "biallelic/ihcap_std_filters_VV_biallelic.txt"
-#gt.file <- "biallelic/ihcap_std_filters_GT_biallelic.txt"
-#gt.add.file <- "biallelic/ihcap_std_filters_GT_biallelic_add.txt"
-#gt.dom.file <- "biallelic/ihcap_std_filters_GT_biallelic_dom.txt"
-#gt.rec.file <- "biallelic/ihcap_std_filters_GT_biallelic_rec.txt"
-#dp.file <- "biallelic/ihcap_std_filters_DP_biallelic.txt"
-#ad.file <- "biallelic/ihcap_std_filters_AD_biallelic.txt"
-#gq.file <- "biallelic/ihcap_std_filters_GQ_biallelic.txt"
-#pl.file <- "biallelic/ihcap_std_filters_PL_biallelic.txt"
+#wf <- "/scratch/medgen/users/alexey/rms_dbGAP/s06_merged_vcf_v1_flt1_txt"
+#vv.file <- "biallelic/s06_merged_vcf_v1_flt1_VV_biallelic.txt"
+#gt.file <- "biallelic/s06_merged_vcf_v1_flt1_GT_biallelic.txt"
+#gt.add.file <- "biallelic/s06_merged_vcf_v1_flt1_GT_biallelic_add.txt"
+#gt.dom.file <- "biallelic/s06_merged_vcf_v1_flt1_GT_biallelic_dom.txt"
+#gt.rec.file <- "biallelic/s06_merged_vcf_v1_flt1_GT_biallelic_rec.txt"
+#dp.file <- "biallelic/s06_merged_vcf_v1_flt1_DP_biallelic.txt"
+#ad.file <- "biallelic/s06_merged_vcf_v1_flt1_AD_biallelic.txt"
+#gq.file <- "biallelic/s06_merged_vcf_v1_flt1_GQ_biallelic.txt"
+#pl.file <- "biallelic/s06_merged_vcf_v1_flt1_PL_biallelic.txt"
 
 # Set root folder
 library(knitr)
@@ -63,40 +64,51 @@ opts_knit$set(root.dir = wf)
 #VCF-VEP annotations (VV)
 
 ```{r vv}
+
 vv.df <- read.table(vv.file, header = TRUE, sep = "\t", quote = "")
 dim(vv.df)
 colnames(vv.df)
+str(vv.df)
 vv.df[1:5,1:9]
+
 ```
 
 #Count of alternative alleles (NDA)
 NDA = number of alternate alleles discovered (but not necessarily genotyped) at the site
 
 ```{r nda}
-nda <- as.vector(vv.df$NDA)
-table(nda)
-hist(nda, xlim=c(0,max(nda)), breaks = c(0:max(nda)))
-rm(vv.df, nda)
+
+# There is no NDA in this RMS dataset
+
+#nda <- as.vector(vv.df$NDA)
+#table(nda)
+#hist(nda, xlim=c(0,max(nda)), breaks = c(0:max(nda)))
+#rm(vv.df, nda)
+
 ```
 
 #Genotypes (GT)
 
 ```{r gt}
+
 gt.df <- read.table(gt.file, header = TRUE, sep = "\t", quote = "")
 dim(gt.df)
 colnames(gt.df)
 gt.df[1:5,1:5]
 rm(gt.df)
+
 ```
 
 #Genotypes additive (GT add)
 
 ```{r gt_add}
+
 gt.add.df <- read.table(gt.add.file, header = TRUE, sep = "\t", quote = "")
 dim(gt.add.df)
 summary(as.factor(as.matrix(gt.add.df)))
 gt.add.df[1:5,1:4]
 rm(gt.add.df)
+
 ```
 
 #Genotypes dominant (GT dom)

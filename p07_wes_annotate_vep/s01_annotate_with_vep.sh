@@ -29,16 +29,16 @@ cd "${annotated_vcf_folder}"
 # Progress report
 echo "Started copying source data"
 
-rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${dataset}_vcf/${dataset}.vcf" "${tmp_folder}/"
+rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${dataset}/${project}_flt1.vcf" "${tmp_folder}/"
 exit_code_1="${?}"
 
-rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${dataset}_vcf/${dataset}.vcf.idx" "${tmp_folder}/"
+rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${dataset}/${project}_flt1.vcf.idx" "${tmp_folder}/"
 exit_code_2="${?}"
 
-rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${dataset}_vcf/${dataset}_cln.vcf" "${tmp_folder}/"
+rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${dataset}/${project}_flt1_cln.vcf" "${tmp_folder}/"
 exit_code_3="${?}"
 
-rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${dataset}_vcf/${dataset}_cln.vcf.idx" "${tmp_folder}/"
+rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${dataset}/${project}_flt1_cln.vcf.idx" "${tmp_folder}/"
 exit_code_4="${?}"
 
 # Stop if copying failed
@@ -69,7 +69,7 @@ export PERL5LIB
 echo "Started VEP for full vcf file"
 
 # Set file names
-full_vcf_in="${tmp_folder}/${dataset}.vcf"
+full_vcf_in="${tmp_folder}/${project}_flt1.vcf"
 
 full_vep_vcf="${annotated_vcf_folder}/${dataset}_vep.vcf"
 full_stats_file="${annotated_vcf_folder}/${dataset}_vep.html"
@@ -119,7 +119,7 @@ md5sum $(basename "${full_vep_vcf}") $(basename "${full_vep_txt}")> "${full_vep_
 echo "Started VEP for clean vcf file"
 
 # Set file names
-cln_vcf_in="${tmp_folder}/${dataset}_cln.vcf"
+cln_vcf_in="${tmp_folder}/${project}_flt1_cln.vcf"
 
 cln_vep_vcf="${annotated_vcf_folder}/${dataset}_cln_vep.vcf"
 cln_stats_file="${annotated_vcf_folder}/${dataset}_cln_vep.html"

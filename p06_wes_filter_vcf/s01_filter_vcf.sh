@@ -1,51 +1,87 @@
 #!/bin/bash
 
 # s01_filter_vcf.sh
-# Filtering vcf
+# Filtering rms vcf
 # Alexey Larionov, 10Feb2016
+# Last update: 24Jun2016
 
 # Selected Refs:
 # http://gatkforums.broadinstitute.org/gatk/discussion/2806/howto-apply-hard-filters-to-a-call-set
 # http://gatkforums.broadinstitute.org/gatk/discussion/53/combining-variants-from-different-files-into-one
 
-# Read parameters
+# --- sbatch section --- #
+
+#SBATCH -J merge_rms_vcfs
+#SBATCH --nodes=1
+#SBATCH --exclusive
+#SBATCH --mail-type=ALL
+#SBATCH --no-requeue
+#SBATCH -p sandybridge
+##SBATCH --qos=INTR
+
+# Set initial working folder
+cd "${SLURM_SUBMIT_DIR}"
+
+# --- Modules section --- #
+
+# Standard cluster's modules
+. /etc/profile.d/modules.sh
+module purge
+module load default-impi
+
+# Additional modules for knitr-rmarkdown (used for histograms)
+module load gcc/5.2.0
+module load boost/1.50.0
+module load texlive/2015
+module load pandoc/1.15.2.1
+
+# --- Set environment --- #
+
+# Stop at any error
+set -e
+
+# Command line arguments
 job_file="${1}"
 scripts_folder="${2}"
 
-# Update pipeline log
-echo "Started s01_filter_vcf: $(date +%d%b%Y_%H:%M:%S)"
+# Read and report setings
+source "${scripts_folder}/a01_read_config.sh"
+
+echo "Started s01_filter_vcfs: $(date +%d%b%Y_%H:%M:%S)"
+echo ""
+echo "Job name: ${SLURM_JOB_NAME}"
+echo "Allocated node: $(hostname)"
+echo ""
+echo "Initial working folder:"
+echo "${SLURM_SUBMIT_DIR}"
+echo ""
+echo "====================== Settings ======================"
 echo ""
 
-# Set parameters
-source "${scripts_folder}/a02_read_config.sh"
-echo "Read settings"
+source "${scripts_folder}/a02_report_settings.sh"
+
+echo "=================== Pipeline steps ==================="
 echo ""
 
-# Go to working folder
-init_dir="$(pwd)"
-cd "${filtered_vcf_folder}"
-
-# --- Copy source gvcfs to cluster --- #
-
-# Progress report
-echo "Started copying source data"
-
-# Source files and folders (on source server)
-source_vcf_folder="${dataset_name}_raw_vcf"
+# Source raw vcf file
 source_vcf="${dataset_name}_raw.vcf"
 
 # Intermediate files and folders on HPC
-tmp_folder="${filtered_vcf_folder}/tmp"
+tmp_folder="${output_folder}/tmp"
 mkdir -p "${tmp_folder}"
 mkdir -p "${histograms_folder}"
 mkdir -p "${all_vcfstats_folder}"
 mkdir -p "${cln_vcfstats_folder}"
 
+# Go to working folder
+init_dir="$(pwd)"
+cd "${output_folder}"
+
 # Copy data
-rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${source_vcf_folder}/${source_vcf}" "${tmp_folder}/"
+rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${input_folder}/${source_vcf}" "${tmp_folder}/"
 exit_code_1="${?}"
 
-rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${source_vcf_folder}/${source_vcf}.idx" "${tmp_folder}/"
+rsync -thrqe "ssh -x" "${data_server}:${project_location}/${project}/${input_folder}/${source_vcf}.idx" "${tmp_folder}/"
 exit_code_2="${?}"
 
 # Stop if copying failed
@@ -76,7 +112,7 @@ select_snp_log="${logs_folder}/${dataset_name}_snp_select.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T SelectVariants \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${raw_input_vcf}" \
   -o "${raw_snp_vcf}" \
   -selectType SNP \
@@ -99,7 +135,7 @@ select_indel_log="${logs_folder}/${dataset_name}_indel_select.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T SelectVariants \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${raw_input_vcf}" \
   -o "${raw_indel_vcf}" \
   -selectType INDEL \
@@ -107,34 +143,6 @@ select_indel_log="${logs_folder}/${dataset_name}_indel_select.log"
 
 # Progress report
 echo "Completed selecting INDELs: $(date +%d%b%Y_%H:%M:%S)"
-echo ""
-
-# --- Select MIXEDs --- #
-
-# Progress report
-echo "Started selecting MIXEDs"
-
-# File names
-raw_mixed_vcf="${tmp_folder}/${dataset_name}_mixed_raw.vcf"
-select_mixed_log="${logs_folder}/${dataset_name}_mixed_select.log"
-
-# Selecting MIXEDs
-"${java7}" -Xmx60g -jar "${gatk}" \
-  -T SelectVariants \
-  -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
-  -V "${raw_input_vcf}" \
-  -o "${raw_mixed_vcf}" \
-  --selectTypeToExclude SNP \
-  --selectTypeToExclude INDEL \
-  -nt 14 &>  "${select_mixed_log}"
-
-# An alterantive way:
-# --selectType MIXED \
-# did not work
-
-# Progress report
-echo "Completed selecting MIXEDs: $(date +%d%b%Y_%H:%M:%S)"
 echo ""
 
 # --- Filter SNPs --- #
@@ -150,7 +158,7 @@ filt_snp_log="${logs_folder}/${dataset_name}_snp_filt.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantFiltration \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${raw_snp_vcf}" \
   -o "${filt_snp_vcf}" \
   --filterName "SNP_DP_LESS_THAN_${MIN_SNP_DP}" \
@@ -178,7 +186,7 @@ filt_indel_log="${logs_folder}/${dataset_name}_indel_filt.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantFiltration \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${raw_indel_vcf}" \
   -o "${filt_indel_vcf}" \
   --filterName "INDEL_DP_LESS_THAN_${MIN_INDEL_DP}" \
@@ -191,34 +199,6 @@ filt_indel_log="${logs_folder}/${dataset_name}_indel_filt.log"
 
 # Progress report
 echo "Completed filtering INDELs: $(date +%d%b%Y_%H:%M:%S)"
-echo ""
-
-# --- Filter MIXEDs --- #
-
-# Progress report
-echo "Started filtering MIXEDs"
-
-# File names
-filt_mixed_vcf="${tmp_folder}/${dataset_name}_mixed_filt.vcf"
-filt_mixed_log="${logs_folder}/${dataset_name}_mixed_filt.log"
-
-# Filtering MIXEDs
-"${java7}" -Xmx60g -jar "${gatk}" \
-  -T VariantFiltration \
-  -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
-  -V "${raw_mixed_vcf}" \
-  -o "${filt_mixed_vcf}" \
-  --filterName "MIXED_DP_LESS_THAN_${MIN_MIXED_DP}" \
-  --filterExpression "DP < ${MIN_MIXED_DP}" \
-  --filterName "MIXED_QUAL_LESS_THAN_${MIN_MIXED_QUAL}" \
-  --filterExpression "QUAL < ${MIN_MIXED_QUAL}" \
-  --filterName "MIXED_VQSLOD_LESS_THAN_${MIN_MIXED_VQSLOD}" \
-  --filterExpression "VQSLOD < ${MIN_MIXED_VQSLOD}" \
-  &>  "${filt_mixed_log}"
-
-# Progress report
-echo "Completed filtering MIXEDs: $(date +%d%b%Y_%H:%M:%S)"
 echo ""
 
 # --- Combine split files --- #
@@ -234,13 +214,12 @@ combining_log="${logs_folder}/${dataset_name}_${filter_name}_cmb.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T CombineVariants \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   --variant:snp "${filt_snp_vcf}" \
   --variant:indel "${filt_indel_vcf}" \
-  --variant:mixed "${filt_mixed_vcf}" \
   -o "${combined_vcf}" \
   -genotypeMergeOptions PRIORITIZE \
-  -priority snp,indel,mixed \
+  -priority snp,indel \
   &>  "${combining_log}"
 
 # Note:
@@ -264,7 +243,7 @@ select_targeted_log="${logs_folder}/${dataset_name}_${filter_name}_tgt_select.lo
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T SelectVariants \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip "${padding}" \
+  -L "${broad_exomes_intervals}" -ip "${padding}" \
   -V "${combined_vcf}" \
   -o "${targeted_vcf}" \
   -nt 14 &>  "${select_targeted_log}"
@@ -286,7 +265,7 @@ mask_padding_log="${logs_folder}/${dataset_name}_${filter_name}_pad.log"
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantFiltration \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${combined_vcf}" \
   -o "${padded_vcf}" \
   --mask "${targeted_vcf}" \
@@ -321,7 +300,7 @@ then
   "${java7}" -Xmx60g -jar "${gatk}" \
     -T VariantFiltration \
     -R "${ref_genome}" \
-    -L "${nextera_targets_intervals}" -ip 100 \
+    -L "${broad_exomes_intervals}" -ip 100 \
     -V "${padded_vcf}" \
     -o "${filt_ma_vcf}" \
     --filterName "MultiAllelic" \
@@ -344,7 +323,7 @@ fi
 # --- Filter variants by frequency in 1k --- # 
 
 # File names
-out_vcf="${filtered_vcf_folder}/${dataset_name}_${filter_name}.vcf"
+out_vcf="${output_folder}/${dataset_name}_${filter_name}.vcf"
 filt_fa_log="${logs_folder}/${dataset_name}_${filter_name}_fa.log"
 
 # If the filtering was not requested
@@ -369,7 +348,7 @@ else
   "${java7}" -Xmx60g -jar "${gatk}" \
     -T VariantFiltration \
     -R "${ref_genome}" \
-    -L "${nextera_targets_intervals}" -ip 100 \
+    -L "${broad_exomes_intervals}" -ip 100 \
     -V "${filt_ma_vcf}" \
     -o "${out_vcf}" \
     --filterName "${fa_filter}" \
@@ -384,7 +363,7 @@ fi
 
 # --- Make md5 file --- #
 
-out_vcf_md5="${filtered_vcf_folder}/${dataset_name}_${filter_name}.md5"
+out_vcf_md5="${output_folder}/${dataset_name}_${filter_name}.md5"
 md5sum $(basename "${out_vcf}") $(basename "${out_vcf}.idx") > "${out_vcf_md5}"
 
 # --- Prepare data for histograms --- #
@@ -400,7 +379,7 @@ histograms_data_log="${logs_folder}/${dataset_name}_${filter_name}_hist_data.log
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T VariantsToTable \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${out_vcf}" \
   -F RawVarID -F FILTER -F TYPE -F MultiAllelic \
   -F ALT_frequency_in_1k_90 -F ALT_frequency_in_1k_95 -F ALT_frequency_in_1k_99 -F ALT_frequency_in_1k_100 \
@@ -478,15 +457,15 @@ echo ""
 echo "Started making clean vcf vithout filtered variants"
 
 # File names
-cln_vcf="${filtered_vcf_folder}/${dataset_name}_${filter_name}_cln.vcf"
-cln_vcf_md5="${filtered_vcf_folder}/${dataset_name}_${filter_name}_cln.md5"
+cln_vcf="${output_folder}/${dataset_name}_${filter_name}_cln.vcf"
+cln_vcf_md5="${output_folder}/${dataset_name}_${filter_name}_cln.md5"
 cln_vcf_log="${logs_folder}/${dataset_name}_${filter_name}_cln.log"
 
 # Exclude filtered variants
 "${java7}" -Xmx60g -jar "${gatk}" \
   -T SelectVariants \
   -R "${ref_genome}" \
-  -L "${nextera_targets_intervals}" -ip 100 \
+  -L "${broad_exomes_intervals}" -ip 100 \
   -V "${out_vcf}" \
   -o "${cln_vcf}" \
   --excludeFiltered \
@@ -528,7 +507,7 @@ echo "Started copying results to NAS"
 rm -fr "${tmp_folder}"
 
 # Copy files to NAS
-rsync -thrqe "ssh -x" "${filtered_vcf_folder}" "${data_server}:${project_location}/${project}/" 
+rsync -thrqe "ssh -x" "${output_folder}" "${data_server}:${project_location}/${project}/" 
 exit_code="${?}"
 
 # Stop if copying failed
@@ -542,12 +521,12 @@ then
 fi
 
 # Change ownership on nas (to allow user manipulating files later w/o administrative privileges)
-ssh -x "${data_server}" "chown -R ${mgqnap_user}:${mgqnap_group} ${project_location}/${project}/${dataset_name}_${filter_name}_vcf"
+ssh -x "${data_server}" "chown -R ${mgqnap_user}:${mgqnap_group} ${project_location}/${project}/$(basename ${output_folder})"
 ssh -x "${data_server}" "chown -R ${mgqnap_user}:${mgqnap_group} ${project_location}/${project}" # just in case...
 ssh -x "${data_server}" "chown -R ${mgqnap_user}:${mgqnap_group} ${project_location}" # just in case...
 
 # Progress report to log on nas
-log_on_nas="${project_location}/${project}/${dataset_name}_${filter_name}_vcf/logs/${dataset_name}_${filter_name}.log"
+log_on_nas="${project_location}/${project}/$(basename ${output_folder})/logs/s01_filter_vcf.log"
 timestamp="$(date +%d%b%Y_%H:%M:%S)"
 ssh -x "${data_server}" "echo \"Completed copying results to NAS: ${timestamp}\" >> ${log_on_nas}"
 ssh -x "${data_server}" "echo \"\" >> ${log_on_nas}"
@@ -577,5 +556,5 @@ then
   rm -fr "${project_folder}"
   ssh -x "${data_server}" "echo \"Removed project folder from cluster\" >> ${log_on_nas}"
 else
-  ssh -x "${data_server}" "echo \"Project folder is not removed from cluster\" >> ${log_on_nas}"
+  ssh -x "${data_server}" "echo \"Project folder is emptied and left on cluster\" >> ${log_on_nas}"
 fi 
